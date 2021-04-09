@@ -82,6 +82,7 @@ class articlelist(db.Model):
     title = db.Column(db.String(256),nullable=False)
     comnum = db.Column(db.Integer,nullable=False) 
     category = db.Column(db.Integer,nullable=False)
+    dynamicTags = db.Column(db.String(256),nullable=False)
     # json序列化
     def keys(self):
         return ['briefcontent', 'articleid','likenum','author','creationtime','title','comnum','category']
@@ -100,6 +101,7 @@ class article(db.Model):
     comnum = db.Column(db.Integer,nullable=False) 
     category = db.Column(db.Integer,nullable=False) 
     likenum = db.Column(db.Integer,nullable=False) 
+    dynamicTags = db.Column(db.String(256),nullable=False)
     # json序列化
     def keys(self):
         return ['content', 'articleid','likenum','author','creationtime','title','comnum','category']
@@ -231,11 +233,14 @@ def PostArticle():
     author = request.json.get('account')
     title = request.json.get('title')
     creationtime = request.json.get('creationtime')
-    category = request.json.get('dynamicTags')
+    dynamicTags = request.json.get('dynamicTags')
+    comnum = 0
+    category = 1
+    likenum = 0
     # 生成随机哈希值的文章id
     articleid = random.getrandbits(128) 
     #增加
-    newarticle = Article(title=title, content=content,creationtime=creationtime,category=dynamicTags,author=author,articleid=articleid)
+    newarticle = article(title=title, content=content,creationtime=creationtime,dynamicTags=dynamicTags,author=author,articleid=articleid)
     db.session.add(newarticle)
     #提交事务
     db.session.commit()
