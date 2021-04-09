@@ -7,6 +7,7 @@ from flask import jsonify
 from flask_cors import CORS,cross_origin
 from flask.json import JSONEncoder as _JSONEncoder
 from datetime import date
+import random
 
 #导入第三方连接库
 from flask_sqlalchemy import SQLAlchemy
@@ -227,16 +228,22 @@ def GetArticleContent():
 @app.route('/PostArticle',methods=['POST'])
 def PostArticle():
     content = request.json.get('content')
-    account = request.json.get('account')
+    author = request.json.get('account')
     title = request.json.get('title')
     creationtime = request.json.get('creationtime')
-    dynamicTags = request.json.get('dynamicTags')
-    obj = article.query.filter(article.articleid == articleid).first()
-    data_json = json.loads(json.dumps(obj, cls=JSONEncoder))
+    category = request.json.get('dynamicTags')
+    # 生成随机哈希值的文章id
+    articleid = random.getrandbits(128) 
+    #增加
+    newarticle = Article(title=title, content=content,creationtime=creationtime,category=dynamicTags,author=author,articleid=articleid)
+    db.session.add(newarticle)
+    #提交事务
+    db.session.commit()
+    # data_json = json.loads(json.dumps(obj, cls=JSONEncoder))
     if obj == None:
         return jsonify({"message":"查询失败，文章不存在！","result": "failed"})
     else :
-        return jsonify({"message":data_json,"result": "success"})
+        return jsonify({"message":"发表文章成功！","result": "success"})
 
 
 if __name__ == '__main__':
