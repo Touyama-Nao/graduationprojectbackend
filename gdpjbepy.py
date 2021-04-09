@@ -223,6 +223,21 @@ def GetArticleContent():
     else :
         return jsonify({"message":data_json,"result": "success"})
 
+# 发表文章接口实现
+@app.route('/PostArticle',methods=['POST'])
+def PostArticle():
+    content = request.json.get('content')
+    account = request.json.get('account')
+    title = request.json.get('title')
+    creationtime = request.json.get('creationtime')
+    dynamicTags = request.json.get('dynamicTags')
+    obj = article.query.filter(article.articleid == articleid).first()
+    data_json = json.loads(json.dumps(obj, cls=JSONEncoder))
+    if obj == None:
+        return jsonify({"message":"查询失败，文章不存在！","result": "failed"})
+    else :
+        return jsonify({"message":data_json,"result": "success"})
+
 
 if __name__ == '__main__':
     # app.run(host, port, debug, options)
