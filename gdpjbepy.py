@@ -1,5 +1,5 @@
 # 导入Flask类
-from flask import Flask as _Flask
+from flask import Flask as _Flask,session
 from flask import request
 from condbconfig import Config
 import json #post请求传入json对象时，通过json获取参数
@@ -120,13 +120,20 @@ class article(db.Model):
         return getattr(self, item) 
 
 # sessionp判断登录接口
-@app.route('/sessions', methods=['POST', 'GET'])  # 添加路由
+@app.route('/getSessions', methods=['POST', 'GET'])  # 添加路由
 def sessions():
     session_name = session.get('account')#获取指定session
     if session_name == None :
         return jsonify({"message":"用户未登录！","result": "failed"})
     else:
-        data_json = json.loads(json.dumps(session_name, cls=JSONEncoder))
+        print(str(session_name))
+        seq = users.query.filter(users.account == str(session_name)).first()
+        password = seq.password
+        data = {
+            "account" : session_name,
+            "password":password
+        }
+        data_json = json.loads(json.dumps(data, cls=JSONEncoder))
         return jsonify({"message":data_json,"result": "success"})
     print("session_name="+str(session_name))
     
