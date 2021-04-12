@@ -8,6 +8,7 @@ from flask_cors import CORS,cross_origin
 from flask.json import JSONEncoder as _JSONEncoder
 from datetime import date
 import random
+import datetime #导入转换datetime时间的包
 
 #导入第三方连接库
 from flask_sqlalchemy import SQLAlchemy
@@ -229,26 +230,36 @@ def GetArticleContent():
 # 发表文章接口实现
 @app.route('/PostArticle',methods=['POST'])
 def PostArticle():
+    print(1)
     content = request.json.get('content')
     author = request.json.get('account')
     title = request.json.get('title')
     creationtime = request.json.get('creationtime')
+    # 转化字符串为datetime格式
+    print(type(creationtime))
+    creationtime = creationtime.split('T',1)
+    creationtime = creationtime[0]
+    lst = creationtime.split('-',2)
+    creationtime = lst[0] + lst[1] + lst[2]
+    creationtime = datetime.datetime.strptime(str(creationtime), "%Y%m%d")
     dynamicTags = request.json.get('dynamicTags')
     comnum = 0
     category = 1
     likenum = 0
+    print(dynamicTags)
+    print(1)
+    
+    json_data = json.dumps(dynamicTags, ensure_ascii=False)
+
     # 生成随机哈希值的文章id
     articleid = random.getrandbits(128) 
     #增加
-    newarticle = article(title=title, content=content,creationtime=creationtime,dynamicTags=dynamicTags,author=author,articleid=articleid)
+    newarticle = article(title=title, content=content,creationtime=creationtime,dynamicTags=json_data,author=author,articleid=articleid)
     db.session.add(newarticle)
     #提交事务
     db.session.commit()
     # data_json = json.loads(json.dumps(obj, cls=JSONEncoder))
-    if obj == None:
-        return jsonify({"message":"查询失败，文章不存在！","result": "failed"})
-    else :
-        return jsonify({"message":"发表文章成功！","result": "success"})
+    return jsonify({"message":"发表文章成功！","result": "success"})
 
 
 if __name__ == '__main__':
@@ -257,4 +268,4 @@ if __name__ == '__main__':
     app.run(host="127.0.0.1", port=3000, debug=True)
 
 
-# 运行程序入口：python gdpjbepy.py GetArticleList GetUserInfor
+# 运行程序入口：python gdpjbepy.py
