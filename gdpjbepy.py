@@ -9,6 +9,7 @@ from flask.json import JSONEncoder as _JSONEncoder
 from datetime import date
 import random
 import datetime #导入转换datetime时间的包
+from datetime import timedelta #导入记住登陆状态需要的包
 
 #导入第三方连接库
 from flask_sqlalchemy import SQLAlchemy
@@ -21,6 +22,14 @@ CORS(app)
 app.config.from_object(Config)
 # 创建sqlalchemy对象
 db = SQLAlchemy(app)
+
+#记住登录状态
+# 要用session，必须app配置一个密钥
+app.secret_key  =  "xjw"
+app.config['SESSION_COOKIE_NAME']="session_key"  #这是配置网页中sessions显示的key
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=12)  # 配置12小时有效
+# 设置session
+# session['uname'] = str(uname)
 
 # 判断数字函数
 def is_number(s):
@@ -110,6 +119,18 @@ class article(db.Model):
     def __getitem__(self, item):
         return getattr(self, item) 
 
+# sessionp判断登录接口
+@app.route('/sessions', methods=['POST', 'GET'])  # 添加路由
+def sessions():
+    session_name = session.get('account')#获取指定session
+    if session_name == None :
+        return jsonify({"message":"用户未登录！","result": "failed"})
+    else:
+        data_json = json.loads(json.dumps(session_name, cls=JSONEncoder))
+        return jsonify({"message":data_json,"result": "success"})
+    print("session_name="+str(session_name))
+    
+    # return Response(json.dumps(session_name,ensure_ascii=False), mimetype='application/json')
 
 # route()方法用于设定路由；类似spring路由配置
 # 下面是登陆接口实现
@@ -119,9 +140,24 @@ def Login():
     password = request.json.get('password')
     obj = users.query.filter(users.account == account, users.password == password).first()
     if obj.password == password and obj.account == account:
+         # 设置session，记住登录状态
+         session['account'] = str(account)
          return jsonify({"message":"登录成功","result": "success"})
     else:
          return jsonify({"message":"登录失败","result": "failed"})
+
+# 下面是登出接口实现
+@app.route('/Logout',methods=['post'])
+def Logout():
+    account = request.json.get('account')
+    password = request.json.get('password')
+    obj = users.query.filter(users.account == account, users.password == password).first()
+    if obj.password == password and obj.account == account:
+         # 删除sessions，登出
+         session.pop('account',None)
+         return jsonify({"message":"登出成功","result": "success"})
+    else:
+         return jsonify({"message":"登出失败","result": "failed"})
 
 # 注册接口实现
 @app.route('/Register',methods=['post'])
@@ -246,8 +282,6 @@ def PostArticle():
     comnum = 0
     category = 1
     likenum = 0
-    print(dynamicTags)
-    print(1)
     
     json_data = json.dumps(dynamicTags, ensure_ascii=False)
 
