@@ -249,10 +249,21 @@ def GetUserInfor():
         return jsonify({"message":data_json,"result": "success"})
 
 # 获取用户个人文章列表接口实现
-@app.route('/GetArticleList',methods=['GET'])
-def GetArticleList():
+@app.route('/user/GetArticleList',methods=['GET'])
+def GetUserArticleList():
     author = request.args.get('account')
     obj = articlelist.query.filter(articlelist.author == author).all()
+    data_json = json.loads(json.dumps(obj, cls=JSONEncoder))
+    if obj == None:
+        return jsonify({"message":[],"result": "success"})
+    else :
+        return jsonify({"message":data_json,"result": "success"})
+
+# 获取指定类别文章列表接口实现
+@app.route('/GetArticleList',methods=['GET'])
+def GetArticleList():
+    category = request.args.get('category')
+    obj = articlelist.query.filter(articlelist.category == category).all()
     data_json = json.loads(json.dumps(obj, cls=JSONEncoder))
     if obj == None:
         return jsonify({"message":[],"result": "success"})
