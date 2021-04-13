@@ -285,7 +285,6 @@ def GetArticleContent():
 # 发表文章接口实现
 @app.route('/PostArticle',methods=['POST'])
 def PostArticle():
-    print(1)
     content = request.json.get('content')
     author = request.json.get('account')
     title = request.json.get('title')
@@ -301,9 +300,8 @@ def PostArticle():
     dynamicTags = request.json.get('dynamicTags')
     comnum = 0
     likenum = 0
-    
+    #将数据转成字符存储
     json_data = json.dumps(dynamicTags, ensure_ascii=False)
-
     # 生成随机哈希值的文章id
     articleid = random.getrandbits(128) 
     #增加
@@ -311,12 +309,50 @@ def PostArticle():
     newarticlelist = articlelist(title=title, briefcontent=content[0:100],creationtime=creationtime,dynamicTags=json_data,author=author,articleid=articleid,category=category,comnum=comnum,likenum=likenum)
     db.session.add(newarticle)
     db.session.add(newarticlelist)
-
     #提交事务
     db.session.commit()
     # data_json = json.loads(json.dumps(obj, cls=JSONEncoder))
     return jsonify({"message":"发表文章成功！","result": "success"})
 
+# 修改文章接口实现
+@app.route('/ReviseArticle',methods=['POST'])
+def ReviseArticle():
+    articleid = request.json.get('articleid')
+    content = request.json.get('content')
+    author = request.json.get('account')
+    title = request.json.get('title')
+    creationtime = request.json.get('creationtime')
+    category = request.json.get('category')
+    # 转化字符串为datetime格式
+    print(type(creationtime))
+    creationtime = creationtime.split('T',1)
+    creationtime = creationtime[0]
+    lst = creationtime.split('-',2)
+    creationtime = lst[0] + lst[1] + lst[2]
+    creationtime = datetime.datetime.strptime(str(creationtime), "%Y%m%d")
+    dynamicTags = request.json.get('dynamicTags')
+    #将数据转成字符存储
+    json_data = json.dumps(dynamicTags, ensure_ascii=False)
+    #修改
+    obj = article.query.filter(article.articleid == articleid).first()
+    obj.content = content
+    obj.title = title
+    obj.author = author
+    obj.creationtime = creationtime
+    obj.dynamicTags = dynamicTags
+    obj.category = category
+
+    obj2 = articlelist.query.filter(articlelist.articleid == articleid).first()
+    obj2.briefcontent=content[0:100]
+    obj2.title = title
+    obj2.author = author
+    obj2.creationtime = creationtime
+    obj2.dynamicTags = dynamicTags
+    obj2.category = category
+    #提交事务
+    db.session.commit()
+    # data_json = json.loads(json.dumps(obj, cls=JSONEncoder))
+    return jsonify({"message":"发表文章成功！","result": "success"})
 
 if __name__ == '__main__':
     # app.run(host, port, debug, options)
@@ -324,4 +360,4 @@ if __name__ == '__main__':
     app.run(host="127.0.0.1", port=3000, debug=True)
 
 
-# 运行程序入口：python gdpjbepy.py
+# 运行程序入口：python gdpjbepy.py Revise the article
