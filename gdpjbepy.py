@@ -95,7 +95,7 @@ class articlelist(db.Model):
     dynamicTags = db.Column(db.String(256),nullable=False)
     # json序列化
     def keys(self):
-        return ['briefcontent', 'articleid','likenum','author','creationtime','title','comnum','category']
+        return ['briefcontent', 'articleid','likenum','author','creationtime','title','comnum','category','dynamicTags']
 
     def __getitem__(self, item):
         return getattr(self, item) 
@@ -114,7 +114,7 @@ class article(db.Model):
     dynamicTags = db.Column(db.String(256),nullable=False)
     # json序列化
     def keys(self):
-        return ['content', 'articleid','likenum','author','creationtime','title','comnum','category']
+        return ['content', 'articleid','likenum','author','creationtime','title','comnum','category','dynamicTags']
 
     def __getitem__(self, item):
         return getattr(self, item) 
@@ -276,6 +276,7 @@ def GetArticleContent():
     articleid = request.args.get('articleid')
     obj = article.query.filter(article.articleid == articleid).first()
     data_json = json.loads(json.dumps(obj, cls=JSONEncoder))
+    print(data_json)
     if obj == None:
         return jsonify({"message":"查询失败，文章不存在！","result": "failed"})
     else :
@@ -289,6 +290,7 @@ def PostArticle():
     author = request.json.get('account')
     title = request.json.get('title')
     creationtime = request.json.get('creationtime')
+    category = request.json.get('category')
     # 转化字符串为datetime格式
     print(type(creationtime))
     creationtime = creationtime.split('T',1)
@@ -298,7 +300,6 @@ def PostArticle():
     creationtime = datetime.datetime.strptime(str(creationtime), "%Y%m%d")
     dynamicTags = request.json.get('dynamicTags')
     comnum = 0
-    category = 1
     likenum = 0
     
     json_data = json.dumps(dynamicTags, ensure_ascii=False)
@@ -306,8 +307,11 @@ def PostArticle():
     # 生成随机哈希值的文章id
     articleid = random.getrandbits(128) 
     #增加
-    newarticle = article(title=title, content=content,creationtime=creationtime,dynamicTags=json_data,author=author,articleid=articleid)
+    newarticle = article(title=title, content=content,creationtime=creationtime,dynamicTags=json_data,author=author,articleid=articleid,category=category,comnum=comnum,likenum=likenum)
+    newarticlelist = articlelist(title=title, briefcontent=content[0:100],creationtime=creationtime,dynamicTags=json_data,author=author,articleid=articleid,category=category,comnum=comnum,likenum=likenum)
     db.session.add(newarticle)
+    db.session.add(newarticlelist)
+
     #提交事务
     db.session.commit()
     # data_json = json.loads(json.dumps(obj, cls=JSONEncoder))
