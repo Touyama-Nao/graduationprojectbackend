@@ -291,9 +291,8 @@ def PostArticle():
     creationtime = request.json.get('creationtime')
     category = request.json.get('category')
     # 转化字符串为datetime格式
-    print(type(creationtime))
-    creationtime = creationtime.split('T',1)
-    creationtime = creationtime[0]
+    print(creationtime)
+    creationtime = creationtime[0:10]
     lst = creationtime.split('-',2)
     creationtime = lst[0] + lst[1] + lst[2]
     creationtime = datetime.datetime.strptime(str(creationtime), "%Y%m%d")
@@ -324,10 +323,9 @@ def ReviseArticle():
     creationtime = request.json.get('creationtime')
     category = request.json.get('category')
     # 转化字符串为datetime格式
-    print(type(creationtime))
-    creationtime = creationtime.split('T',1)
-    creationtime = creationtime[0]
+    creationtime = creationtime[0:10]
     lst = creationtime.split('-',2)
+    print(lst)
     creationtime = lst[0] + lst[1] + lst[2]
     creationtime = datetime.datetime.strptime(str(creationtime), "%Y%m%d")
     dynamicTags = request.json.get('dynamicTags')
@@ -339,7 +337,7 @@ def ReviseArticle():
     obj.title = title
     obj.author = author
     obj.creationtime = creationtime
-    obj.dynamicTags = dynamicTags
+    obj.dynamicTags = json_data
     obj.category = category
 
     obj2 = articlelist.query.filter(articlelist.articleid == articleid).first()
@@ -347,7 +345,7 @@ def ReviseArticle():
     obj2.title = title
     obj2.author = author
     obj2.creationtime = creationtime
-    obj2.dynamicTags = dynamicTags
+    obj2.dynamicTags = json_data
     obj2.category = category
     #提交事务
     db.session.commit()
