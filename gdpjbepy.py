@@ -10,6 +10,7 @@ from datetime import date
 import random
 import datetime #导入转换datetime时间的包
 from datetime import timedelta #导入记住登陆状态需要的包
+# import RecommendationAlgorithm
 
 #导入第三方连接库
 from flask_sqlalchemy import SQLAlchemy
@@ -74,9 +75,10 @@ class users(db.Model):
     phonenum = db.Column(db.Integer,nullable=False)
     age = db.Column(db.Integer,nullable=False)
     address = db.Column(db.String(256),nullable=False)
+    userid = db.Column(db.String(256),nullable=False)
     # json序列化
     def keys(self):
-        return ['account', 'nickname','sex','password','phonenum','age','address']
+        return ['account', 'nickname','sex','password','phonenum','age','address','userid']
 
     def __getitem__(self, item):
         return getattr(self, item)
@@ -93,9 +95,11 @@ class articlelist(db.Model):
     comnum = db.Column(db.Integer,nullable=False) 
     category = db.Column(db.Integer,nullable=False)
     dynamicTags = db.Column(db.String(256),nullable=False)
+    userid = db.Column(db.String(256),nullable=False)
+    rate = db.Column(db.Integer,nullable=False) 
     # json序列化
     def keys(self):
-        return ['briefcontent', 'articleid','likenum','author','creationtime','title','comnum','category','dynamicTags']
+        return ['briefcontent', 'articleid','likenum','author','creationtime','title','comnum','category','dynamicTags','userid','rate']
 
     def __getitem__(self, item):
         return getattr(self, item) 
@@ -112,9 +116,11 @@ class article(db.Model):
     category = db.Column(db.Integer,nullable=False) 
     likenum = db.Column(db.Integer,nullable=False) 
     dynamicTags = db.Column(db.String(256),nullable=False)
+    userid = db.Column(db.String(256),nullable=False)
+    rate = db.Column(db.Integer,nullable=False) 
     # json序列化
     def keys(self):
-        return ['content', 'articleid','likenum','author','creationtime','title','comnum','category','dynamicTags']
+        return ['content', 'articleid','likenum','author','creationtime','title','comnum','category','dynamicTags','userid','rate']
 
     def __getitem__(self, item):
         return getattr(self, item) 
@@ -129,9 +135,11 @@ def sessions():
         print(str(session_name))
         seq = users.query.filter(users.account == str(session_name)).first()
         password = seq.password
+        userid = seq.userid
         data = {
             "account" : session_name,
-            "password":password
+            "password":password,
+            "userid": userid
         }
         data_json = json.loads(json.dumps(data, cls=JSONEncoder))
         return jsonify({"message":data_json,"result": "success"})
@@ -171,9 +179,11 @@ def Logout():
 def Register():
     account = request.json.get('account')
     password = request.json.get('password')
+    # 生成随机用户id
+    userid = random.getrandbits(128) 
     obj = users.query.filter(users.account == account, users.password == password).first()
     if obj == None and password != "":
-        newuser = users(account=account, password = password)
+        newuser = users(account=account, password = password,userid = userid)
         db.session.add(newuser)
         #事务 python gdpjbepy.py
         db.session.commit()
@@ -288,12 +298,14 @@ def PostArticle():
     content = request.json.get('content')
     author = request.json.get('account')
     title = request.json.get('title')
+    userid = request.json.get('userid')
     creationtime = request.json.get('creationtime')
     category = request.json.get('category')
     # 转化字符串为datetime格式
     print(creationtime)
     creationtime = creationtime[0:10]
     lst = creationtime.split('-',2)
+    print(lst)
     creationtime = lst[0] + lst[1] + lst[2]
     creationtime = datetime.datetime.strptime(str(creationtime), "%Y%m%d")
     dynamicTags = request.json.get('dynamicTags')
@@ -304,8 +316,8 @@ def PostArticle():
     # 生成随机哈希值的文章id
     articleid = random.getrandbits(128) 
     #增加
-    newarticle = article(title=title, content=content,creationtime=creationtime,dynamicTags=json_data,author=author,articleid=articleid,category=category,comnum=comnum,likenum=likenum)
-    newarticlelist = articlelist(title=title, briefcontent=content[0:100],creationtime=creationtime,dynamicTags=json_data,author=author,articleid=articleid,category=category,comnum=comnum,likenum=likenum)
+    newarticle = article(title=title, content=content,creationtime=creationtime,dynamicTags=json_data,author=author,articleid=articleid,category=category,comnum=comnum,likenum=likenum,userid=userid)
+    newarticlelist = articlelist(title=title, briefcontent=content[0:100],creationtime=creationtime,dynamicTags=json_data,author=author,articleid=articleid,category=category,comnum=comnum,likenum=likenum,userid=userid)
     db.session.add(newarticle)
     db.session.add(newarticlelist)
     #提交事务

@@ -22,7 +22,7 @@ db = MySQLdb.connect("localhost", "xiao", "20140941", "graduationdb", charset='u
 cursor = db.cursor()
 
 # 创建数据表SQL语句
-sql = """select userid,articleid,rate from article"""
+sql = """select userid,articleid,rate from ratings"""
 
 # 使用execute方法执行SQL语句
 cursor.execute(sql)
@@ -56,9 +56,10 @@ class UserCFRec:
     def loadData(self):
         print("加载数据...")
         data=[]
-        for line in open(self.datafile):
-            userid,itemid,record,_ = line.split("::")
-            data.append((userid,itemid,int(record)))
+        data = lstRows
+        # for line in open(self.datafile):
+            # userid,itemid,record,_ = line.split("::")
+            # data.append((userid,itemid,int(record)))
         print(type(data))
         return data
 
@@ -84,9 +85,9 @@ class UserCFRec:
     # 计算用户之间的相似度，采用惩罚热门商品和优化算法复杂度的算法
     def UserSimilarityBest(self):
         print("开始计算用户之间的相似度 ...")
-        if os.path.exists("data/user_sim.json"):
+        if os.path.exists("user_sim.json"):
             print("用户相似度从文件加载 ...")
-            userSim = json.load(open("data/user_sim.json","r"))
+            userSim = json.load(open("user_sim.json","r"))
         else:
             # 得到每个item被哪些user评价过
             item_users = dict()
@@ -117,7 +118,7 @@ class UserCFRec:
                         continue
                     userSim[u].setdefault(v, 0.0)
                     userSim[u][v] = cuv / math.sqrt(user_item_count[u] * user_item_count[v])
-            json.dump(userSim, open('data/user_sim.json', 'w'))
+            json.dump(userSim, open('user_sim.json', 'w'))
         return userSim
 
     """
@@ -155,10 +156,10 @@ class UserCFRec:
             precision += nitems
         return hit / (precision * 1.0)
 
-if __name__=='__main__':
-    cf = UserCFRec("./data/ml-1m/ratings.dat")
-    result = cf.recommend("1")
-    print("user '1' recommend result is {} ".format(result))
+# if __name__=='__main__':
+#     cf = UserCFRec("./data/ml-1m/ratings.dat")
+#     result = cf.recommend("1")
+#     print("user '1' recommend result is {} ".format(result))
 
-    precision = cf.precision()
-    print("precision is {}".format(precision))
+#     precision = cf.precision()
+#     print("precision is {}".format(precision))
