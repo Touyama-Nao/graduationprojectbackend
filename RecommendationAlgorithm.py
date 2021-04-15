@@ -48,7 +48,7 @@ class UserCFRec:
         self.datafile = datafile
         self.data = self.loadData()
 
-        self.trainData,self.testData = self.splitData(3,47)  # 训练集与数据集
+        self.trainData,self.testData = self.splitData(2,47)  # 训练集与数据集
         self.users_sim = self.UserSimilarityBest()
 
     # 加载评分数据到data，数据形式
@@ -69,8 +69,9 @@ class UserCFRec:
             seed: 生成随机数的种子
             M: 随机数上限
     """
-    def splitData(self,k,seed,M=8):
+    def splitData(self,k,seed,M=2): #这里将k从3改为了2,M从8改为了2
         print("训练数据集与测试数据集切分...")
+        print(k,seed)
         train,test = {},{}
         random.seed(seed)
         for user,item,record in self.data:
@@ -155,6 +156,7 @@ class UserCFRec:
                     hit += 1
             precision += nitems
         return hit / (precision * 1.0)
+        
 
 # if __name__=='__main__':
 #     cf = UserCFRec("./data/ml-1m/ratings.dat")

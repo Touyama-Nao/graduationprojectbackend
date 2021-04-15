@@ -10,7 +10,7 @@ from datetime import date
 import random
 import datetime #导入转换datetime时间的包
 from datetime import timedelta #导入记住登陆状态需要的包
-# import RecommendationAlgorithm
+import RecommendationAlgorithm
 
 #导入第三方连接库
 from flask_sqlalchemy import SQLAlchemy
@@ -87,7 +87,7 @@ class users(db.Model):
 class articlelist(db.Model):
     __tablename__ = "articlelist"
     briefcontent = db.Column(db.String(256),nullable=False)
-    articleid = db.Column(db.Integer,primary_key=True)
+    articleid = db.Column(db.String(256),primary_key=True)
     likenum = db.Column(db.Integer,nullable=False) 
     author = db.Column(db.String(256),nullable=False)
     creationtime = db.Column(db.DateTime,nullable=False)
@@ -108,7 +108,7 @@ class articlelist(db.Model):
 class article(db.Model):
     __tablename__ = "article"
     content = db.Column(db.String(256),nullable=False)
-    articleid = db.Column(db.Integer,primary_key=True)
+    articleid = db.Column(db.String(256),primary_key=True)
     author = db.Column(db.String(256),nullable=False)
     creationtime = db.Column(db.DateTime,nullable=False)
     title = db.Column(db.String(256),nullable=False)
@@ -121,6 +121,19 @@ class article(db.Model):
     # json序列化
     def keys(self):
         return ['content', 'articleid','likenum','author','creationtime','title','comnum','category','dynamicTags','userid','rate']
+
+    def __getitem__(self, item):
+        return getattr(self, item) 
+
+# ratings表映射
+class ratings(db.Model):
+    __tablename__ = "ratings"
+    userid = db.Column(db.String(256),nullable=False)
+    articleid = db.Column(db.String(256),primary_key=True)
+    rate = db.Column(db.Integer,nullable=False)
+    # json序列化
+    def keys(self):
+        return ['articleid','userid','rate']
 
     def __getitem__(self, item):
         return getattr(self, item) 
@@ -205,7 +218,6 @@ def UpdateUserInfor():
     sex = request.json.get('sex')
     nickname = request.json.get('nickname')
     obj = users.query.filter(users.account == account).first()
-    # obj.title = 'new title'
     # db.session.commit()
 
     # 修改年龄
@@ -213,7 +225,6 @@ def UpdateUserInfor():
         return jsonify({"message":"修改用户信息失败，用户年龄输入错误！","result": "failed"})
     else :
         obj.age = age
-        # db.session.commit()
 
     # 修改密码
     if password == "":
@@ -363,6 +374,60 @@ def ReviseArticle():
     db.session.commit()
     # data_json = json.loads(json.dumps(obj, cls=JSONEncoder))
     return jsonify({"message":"发表文章成功！","result": "success"})
+
+# 获取文章推荐列表接口实现
+@app.route('/user/GetHotspotList',methods=['GET'])
+def GetHotspotList():
+    userid = request.args.get('userid')
+    # 调用推荐算法的模块
+    cf = RecommendationAlgorithm.UserCFRec("./data/ml-1m/ratings.dat")
+    result = cf.recommend(userid)
+    print("user '1' recommend result is {} ".format(result))
+    # 将结果的result转换为json文章列表对象返回
+    dic_json = json.loads(json.dumps(result,ensure_ascii=False,indent=4,cls=JSONEncoder))
+    # 遍历字典重新构造json返回值
+    for key in dic_json:
+        # 一条一条查询文章的列表进行构造返回值
+        obj = articlelist.query.filter(articlelist.articleid == key).first()
+        dic_json[key] = obj
+    dic_json = json.loads(json.dumps(dic_json, cls=JSONEncoder))
+    if dic_json == None:
+        return jsonify({"message":"查询失败，推荐文章不存在！","result": "failed"})
+    else :
+        return jsonify({"message":dic_json,"result": "success"})
+
+# 获取用户与文章对应的评分接口实现
+@app.route('/user/GetRate',methods=['GET'])
+def GetRate():
+    userid = request.args.get('userid')
+    articleid = request.args.get('articleid')
+    print(userid,articleid)
+    obj = ratings.query.filter(ratings.articleid == articleid,ratings.userid == userid).first()
+    if obj == None:
+        return jsonify({"message":"查询失败，文章评分不存在！","result": "failed"})
+    else :
+        data_json = json.loads(json.dumps(obj, cls=JSONEncoder))
+        return jsonify({"message":data_json,"result": "success"})
+
+# 用户文章评分发表接口实现
+@app.route('/user/PostRate',methods=['POST'])
+def PostRate():
+    articleid = request.json.get('articleid')
+    rate = request.json.get('rate')
+    userid = request.json.get('userid')
+    obj = ratings.query.filter(ratings.articleid == articleid,ratings.userid == userid).first()
+    if rate == "" or articleid == "" or userid == "":
+        return jsonify({"message":"发表评分失败，发表评分信息有误！","result": "success"})
+    elif obj != None:
+        return jsonify({"message":"发表评分失败，用户已经评分！","result": "success"})
+    else:
+        newrate = ratings(rate=rate,articleid=articleid,userid=userid)
+        db.session.add(newrate)
+        #提交事务
+        db.session.commit()
+        return jsonify({"message":"发表评分成功！","result": "success"})
+
+
 
 if __name__ == '__main__':
     # app.run(host, port, debug, options)
