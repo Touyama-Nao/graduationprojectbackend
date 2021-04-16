@@ -138,6 +138,21 @@ class ratings(db.Model):
     def __getitem__(self, item):
         return getattr(self, item) 
 
+# comment表映射
+class comment(db.Model):
+    __tablename__ = "comment"
+    commentid = db.Column(db.String(256),primary_key=True)
+    content = db.Column(db.String(256),nullable=False)
+    creationtime = db.Column(db.DateTime,nullable=False)
+    articleid = db.Column(db.String(256),nullable=False)
+    userid = db.Column(db.String(256),nullable=False)
+    # json序列化
+    def keys(self):
+        return ['content', 'creationtime','articleid','userid']
+
+    def __getitem__(self, item):
+        return getattr(self, item)
+
 # sessionp判断登录接口
 @app.route('/getSessions', methods=['POST', 'GET'])  # 添加路由
 def sessions():
@@ -427,7 +442,41 @@ def PostRate():
         db.session.commit()
         return jsonify({"message":"发表评分成功！","result": "success"})
 
+# 发表文章评论接口实现
+@app.route('/user/PostCom',methods=['POST'])
+def PostCom():
+    content = request.json.get('content')
+    author = request.json.get('articleid')
+    userid = request.json.get('userid')
+    creationtime = request.json.get('creationtime')
+    # 生成随机哈希值的文章评论id
+    commentid = random.getrandbits(128) 
+    # 转化字符串为datetime格式
+    creationtime = creationtime[0:10]
+    lst = creationtime.split('-',2)
+    print(lst)
+    creationtime = lst[0] + lst[1] + lst[2]
+    creationtime = datetime.datetime.strptime(str(creationtime), "%Y%m%d")
+    #增加
+    newcomment = comment(content=content,creationtime=creationtime,articleid=articleid,userid=userid,commentid=commentid)
+    db.session.add(newcomment)
+    #提交事务
+    db.session.commit()
+    if creationtime == "" or articleid == "" or userid == "":
+        return jsonify({"message":"发表评论失败，发表评论信息有误！","result": "success"})
+    else:
+        return jsonify({"message":"发表文章评论成功！","result": "success"})
 
+# 获取文章评论接口实现
+@app.route('/user/GetCom',methods=['GET'])
+def GetCom():
+    articleid = request.args.get('articleid')
+    obj = comment.query.filter(comment.articleid == articleid).first()
+    if obj == None:
+        return jsonify({"message":"查询失败，文章评论不存在！","result": "failed"})
+    else :
+        data_json = json.loads(json.dumps(obj, cls=JSONEncoder))
+        return jsonify({"message":data_json,"result": "success"})
 
 if __name__ == '__main__':
     # app.run(host, port, debug, options)
