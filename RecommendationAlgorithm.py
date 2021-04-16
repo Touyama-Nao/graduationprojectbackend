@@ -60,7 +60,7 @@ class UserCFRec:
         # for line in open(self.datafile):
             # userid,itemid,record,_ = line.split("::")
             # data.append((userid,itemid,int(record)))
-        print(type(data))
+        print(data)
         return data
 
     """

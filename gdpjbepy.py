@@ -11,6 +11,7 @@ import random
 import datetime #导入转换datetime时间的包
 from datetime import timedelta #导入记住登陆状态需要的包
 import RecommendationAlgorithm
+import os #文件操作包
 
 #导入第三方连接库
 from flask_sqlalchemy import SQLAlchemy
@@ -393,11 +394,18 @@ def ReviseArticle():
 # 获取文章推荐列表接口实现
 @app.route('/user/GetHotspotList',methods=['GET'])
 def GetHotspotList():
+    if os.path.exists("user_sim.json"):
+    # 删除文件，可使用以下两种方法。
+        print("del")
+        path="user_sim.json"
+        os.remove(path)  
+    if os.path.exists("user_sim.json"):
+        print("notdel")
     userid = request.args.get('userid')
     # 调用推荐算法的模块
     cf = RecommendationAlgorithm.UserCFRec("./data/ml-1m/ratings.dat")
     result = cf.recommend(userid)
-    print("user '1' recommend result is {} ".format(result))
+    print("user  recommend result is {} ".format(result))
     # 将结果的result转换为json文章列表对象返回
     dic_json = json.loads(json.dumps(result,ensure_ascii=False,indent=4,cls=JSONEncoder))
     # 遍历字典重新构造json返回值
